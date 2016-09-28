@@ -814,7 +814,7 @@ def main():
                     except apt.cache.FetchFailedException:
                         pass
                 else:
-                    raise SystemError('apt failed to update')
+                    module.fail_json(msg='Failed to update apt cache.')
                 cache.open(progress=None)
                 updated_cache = True
                 mtimestamp, updated_cache_time = get_updated_cache_time()
