@@ -430,28 +430,29 @@ class LinuxService(Service):
                 self.svc_initscript = initscript
 
         def check_systemd():
-
-            # tools must be installed
-            if location.get('systemctl',False):
-
-                # this should show if systemd is the boot init system
-                # these mirror systemd's own sd_boot test http://www.freedesktop.org/software/systemd/man/sd_booted.html
-                for canary in ["/run/systemd/system/", "/dev/.run/systemd/", "/dev/.systemd/"]:
-                    if os.path.exists(canary):
-                        return True
-
-                # If all else fails, check if init is the systemd command, using comm as cmdline could be symlink
-                try:
-                    f = open('/proc/1/comm', 'r')
-                except IOError:
-                    # If comm doesn't exist, old kernel, no systemd
+            """Check if the system is using SystemD."""
+            try:
+                _pid1 = open('/proc/1/comm', 'rb')
+                pid1 = _pid1.read()
+                pid1 = pid1.strip()
+                _pid1.close()
+            except IOError:
+                return False  # If comm doesn't exist, old kernel, no systemd.
+            else:
+                if pid1 == 'systemd':
+                    return True
+                elif pid1 == 'init':
                     return False
-
-                for line in f:
-                    if 'systemd' in line:
-                        return True
-
-            return False
+                else:
+                    # this should show if systemd is the boot init system these mirror
+                    #  systemd's own sd_boot test.
+                    #  http://www.freedesktop.org/software/systemd/man/sd_booted.html
+                    for canary in ["/run/systemd/system/", "/dev/.run/systemd/",
+                                   "/dev/.systemd/"]:
+                        if os.path.exists(canary):
+                            return True
+                    else:
+                        return False  # Return False if SystemD is not detected.
 
         # Locate a tool to enable/disable a service
         if check_systemd():
